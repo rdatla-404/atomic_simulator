@@ -334,6 +334,7 @@ public class AtomicSimulator {
         double time=0;
         final javax.swing.Timer timer;
         int[] sx,sy; float[] sr,sp;
+        private final Font nucleusFont = new Font(Font.MONOSPACED, Font.BOLD, 14);
 
         BohrPanel(Element el){
             element=el;
@@ -419,7 +420,7 @@ public class AtomicSimulator {
             g2.setColor(new Color(255,255,255,55)); g2.fillOval(cx-pR/2,cy-pR/2,pR,pR);
             g2.setColor(new Color(15,23,42));
             int fs=Math.max(10,Math.min(17,pR*2/3));
-            g2.setFont(new Font(Font.MONOSPACED,Font.BOLD,fs));
+            g2.setFont(nucleusFont.deriveFont(Font.BOLD, (float)fs));
             FontMetrics fm=g2.getFontMetrics();
             g2.drawString(element.symbol,cx-fm.stringWidth(element.symbol)/2,cy+fm.getAscent()/2-1);
         }
@@ -433,6 +434,8 @@ public class AtomicSimulator {
         JList<Element> elementList;
         JTextField searchField;
         JPanel infoPanel;
+        JLabel infoHeading;
+        JLabel[] infoValues = new JLabel[12];
 
         AtomTab(){
             setLayout(new BorderLayout());
