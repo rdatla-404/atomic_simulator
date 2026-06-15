@@ -11,23 +11,23 @@ Usage:
     python main.py demo           # quick non-interactive demo
 """
 
-import sys
+import sys, os
 from elements  import periodic_table
 from atom      import Atom, RadioactiveDecay, MonteCarloDecay, Nucleus
 from compound  import bond_predictor, compound_library
 
-
+_ANSI = sys.platform != "win32" or "WT_SESSION" in os.environ
 # ─── COLOUR CODES (ANSI) ────────────────────────────────────
 class C:
-    RESET  = "\033[0m"
-    BOLD   = "\033[1m"
-    CYAN   = "\033[96m"
-    BLUE   = "\033[94m"
-    GREEN  = "\033[92m"
-    YELLOW = "\033[93m"
-    RED    = "\033[91m"
-    GREY   = "\033[90m"
-    WHITE  = "\033[97m"
+    RESET  = "\033[0m"  if _ANSI else ""
+    BOLD   = "\033[1m"  if _ANSI else ""
+    CYAN   = "\033[96m" if _ANSI else ""
+    BLUE   = "\033[94m" if _ANSI else ""
+    GREEN  = "\033[92m" if _ANSI else ""
+    YELLOW = "\033[93m" if _ANSI else ""
+    RED    = "\033[91m" if _ANSI else ""
+    GREY   = "\033[90m" if _ANSI else ""
+    WHITE  = "\033[97m" if _ANSI else ""
 
     @staticmethod
     def header(text: str) -> str:
