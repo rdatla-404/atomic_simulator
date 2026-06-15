@@ -346,6 +346,7 @@ public class AtomicSimulator {
             timer.start();
         }
         void stop(){ timer.stop(); }
+        void start(){ timer.start(); }
         void setElement(Element el){ element=el; repaint(); }
 
         @Override protected void paintComponent(Graphics g){
@@ -849,6 +850,7 @@ public class AtomicSimulator {
             tabs.addTab("⚛  Atom View",atomTab);
             tabs.addTab("📋  Periodic Table",new TableTab(atomTab));
             tabs.addTab("🔗  Compounds",new CompoundTab());
+            
             add(tabs,BorderLayout.CENTER);
             pack();
             setLocationRelativeTo(null);
