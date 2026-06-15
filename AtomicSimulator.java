@@ -850,7 +850,10 @@ public class AtomicSimulator {
             tabs.addTab("⚛  Atom View",atomTab);
             tabs.addTab("📋  Periodic Table",new TableTab(atomTab));
             tabs.addTab("🔗  Compounds",new CompoundTab());
-            
+            tabs.addChangeListener(e -> {
+                if(tabs.getSelectedIndex() == 0) atomTab.bohr.start();
+                else atomTab.bohr.stop();
+            }); 
             add(tabs,BorderLayout.CENTER);
             pack();
             setLocationRelativeTo(null);
