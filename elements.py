@@ -289,6 +289,15 @@ class PerodicTable
     def radioactive(self)            -> List[Element]: return [e for e in self._all if e.is_radioactive]
     def stable(self)                 -> List[Element]: return [e for e in self._all if not e.is_radioactive]
     def all(self)                    -> List[Element]: return list(self._all)
+    def __len__(self) -> int:
+        return len(self._all)
+    def __iter__(self):
+        return iter(self._all)
+
+    def __contains__(self, item) -> bool:
+        if isinstance(item, int): return item in self._by_z
+        if isinstance(item, str): return item in self._by_sym
+        return item in self._all
 
     def print_ascii_table(self) -> None:
         """Print a simplified ASCII periodic table to the console."""
