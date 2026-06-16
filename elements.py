@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import optional, List, Tuple
+from typing import Optional, List, Tuple
 
 
 # ____ CATEGORY METADATA ____________________
