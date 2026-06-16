@@ -6,7 +6,7 @@ Classes:
   Ion                  -- Charged atom (gains/loses electrons)
   Atom                 -- Composite model: nucleus + electron config + element
   RadioactiveDecay     -- Alpha, beta-minus, beta-plus, gamma decay
-
+"""
 
 
 from __future__ import annotations 
@@ -15,7 +15,7 @@ import random
 from dataclasses import dataclass
 from typing import Optional, List, Tuple, Dict
 from elements import Element, PeriodicTable, periodic_table, to_sub, to_sup
-"""
+
 
 # ─── NUCLEUS ────────────────────────────────────────────────
 class Nucleus:
