@@ -271,7 +271,7 @@ public class AtomicSimulator {
     // ──────────────── CHEMISTRY ENGINE ───────────────────
     static final Set<String> METALS = new HashSet<>(Arrays.asList("alkali","alkaline","transition","post-trans"));
 
-    static int gcd(int a, int b){ return b==0?a:gcd(b,a%b); }
+    static int gcd(int a, int b){ while(b!=0){int t=b;b=a%b;a=t;} return a; }
 
     static String sub(int n){
         if(n==1) return "";
