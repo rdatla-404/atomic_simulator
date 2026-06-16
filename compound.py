@@ -17,8 +17,8 @@ from elements import Element, PeriodicTable, periodic_table, METAL_CATEGORIES, t
 
 # ─── CHEMISTRY HELPERS ──────────────────────────────────────
 def _gcd(a: int, b: int) -> int:
-    return a if b == 0 else _gcd(b, a % b)
-
+    while b: a, b = b, a % b
+    return a
 
 def _en_diff(a: Element, b: Element) -> Optional[float]:
     if a.electronegativity is None or b.electronegativity is None:
