@@ -478,7 +478,9 @@ public class AtomicSimulator {
                         e.symbol.equalsIgnoreCase(q)||String.valueOf(e.z).equals(q))
                         .forEach(listModel::addElement);
                 }
-                public void insertUpdate(DocumentEvent e){filter();} public void removeUpdate(DocumentEvent e){filter();} public void changedUpdate(DocumentEvent e){filter();}
+                @Override public void insertUpdate(DocumentEvent e){filter();}
+                @Override public void removeUpdate(DocumentEvent e){filter();}
+                @Override public void changedUpdate(DocumentEvent e){filter();}
             });
             elementList.addListSelectionListener(e->{
                 if(!e.getValueIsAdjusting()&&elementList.getSelectedValue()!=null)
