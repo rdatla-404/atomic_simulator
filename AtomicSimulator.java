@@ -679,7 +679,9 @@ public class AtomicSimulator {
             });
             pickSearch.getDocument().addDocumentListener(new DocumentListener(){
                 void filter(){String q=pickSearch.getText().toLowerCase();pickModel.clear();ELEMENTS.stream().filter(e->q.isEmpty()||e.name.toLowerCase().contains(q)||e.symbol.equalsIgnoreCase(q)||String.valueOf(e.z).equals(q)).forEach(pickModel::addElement);}
-                public void insertUpdate(DocumentEvent e){filter();} public void removeUpdate(DocumentEvent e){filter();} public void changedUpdate(DocumentEvent e){filter();}
+                @Override public void insertUpdate(DocumentEvent e){filter();}
+                @Override public void removeUpdate(DocumentEvent e){filter();}
+                @Override public void changedUpdate(DocumentEvent e){filter();}
             });
             pickList.addMouseListener(new MouseAdapter(){
                 public void mouseClicked(MouseEvent e){ if(e.getClickCount()==2&&pickList.getSelectedValue()!=null) addToTray(ELEMENTS.indexOf(pickList.getSelectedValue())); }
