@@ -251,7 +251,7 @@ ALL_ELEMENTS: List[Element] = [
 
 
 # _______ PERIODIC TABLE CLASS __________________________
-class PerodicTable
+class PeriodicTable
     """
     Central registry for all elements.
     Supports O(1) lookup by Z and symbol, and O(n) filtered queries.
