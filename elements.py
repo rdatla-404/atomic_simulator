@@ -28,8 +28,8 @@ def to_sub(n: int) -> str:
 def to_sup(n: int) -> str:
     return str(n).translate(SUPERSCRIPTS)
 
-
 # ___ ELEMENT DATACLASS _________________________________________
+@dataclass
 class Element:
     """Immutable data model for a chemical element."""
     z:                  int                  # atomic number
