@@ -1,14 +1,11 @@
 """
-main.py — Python CLI entry point for the Atomic Simulator
+main.py — Python command line interface entry point for the Atomic Simulator
 
   PeriodicTable  →  elements.py
   Atom           →  atom.py
   RadioactiveDecay / MonteCarloDecay  --  atom.py
   BondPredictor / CompoundLibrary     --  compound.py
 
-Usage:
-    python main.py                # interactive menu
-    python main.py demo           # quick non-interactive demo
 """
 
 import sys, os
@@ -137,6 +134,29 @@ def action_library() -> None:
     _separator()
 
 
+def action_lookup() -> None:
+    """Search the known compound library directly and display a full,
+    visually-rendered entry — does NOT predict. If nothing matches,
+    says so plainly and points to 'compound' for prediction instead."""
+    query   = _prompt("Search known compounds (name or formula):")
+    results = compound_library.search(query)
+    if not results:
+        print(C.warn(f"  No known compound matches '{query}'."))
+        print(f"  {C.GREY}Try 'compound' to predict one instead.{C.RESET}")
+        return
+    if len(results) == 1:
+        print(results[0])
+        return
+    print(C.header(f"  {len(results)} known compounds match '{query}':"))
+    _separator()
+    for i, c in enumerate(results, start=1):
+        print(f"  {C.CYAN}{i:>2}{C.RESET}  {C.WHITE}{c.formula:<10}{C.RESET}  {c.name}")
+    _separator()
+    choice = _prompt("Number to view in full (or Enter to skip):")
+    if choice.isdigit() and 1 <= int(choice) <= len(results):
+        print(results[int(choice) - 1])
+
+
 def action_decay() -> None:
     """Simulate radioactive decay for a chosen element."""
     query = _prompt("Enter element symbol/name/Z to decay:")
@@ -228,12 +248,17 @@ def run_demo() -> None:
     print(nacl)
 
     # 4. Covalent prediction
-    print(C.header("  4. Predict: N + H (unknown to library)"))
-    nh = bond_predictor.analyze([("C", 1), ("S", 2)])
-    print(nh)
+    print(C.header("  4. Predict: Mg + Br (unknown to library, ionic)"))
+    mgbr2 = bond_predictor.analyze([("Mg", 1), ("Br", 2)])
+    print(mgbr2)
 
-    # 5. Decay
-    print(C.header("  5. Radioactive Decay: Uranium-238"))
+    # 5. Multi-element prediction (3+ elements, generalized heuristic)
+    print(C.header("  5. Predict: K + N + O  (3-element generalization)"))
+    kno3 = bond_predictor.analyze([("K", 1), ("N", 1), ("O", 3)])
+    print(kno3)
+
+    # 6. Decay
+    print(C.header("  6. Radioactive Decay: Uranium-238"))
     u_atom = Atom(periodic_table.get("U"))
     rd     = RadioactiveDecay(u_atom.nucleus)
     d, msg = rd.alpha()
@@ -242,8 +267,8 @@ def run_demo() -> None:
         el = periodic_table.get(d.protons)
         print(f"  Daughter: {el.name} (Z={el.z})" if el else f"  Daughter: Z={d.protons}")
 
-    # 6. Periodic table
-    print(C.header("  6. Periodic Table (ASCII)"))
+    # 7. Periodic table
+    print(C.header("  7. Periodic Table (ASCII)"))
     periodic_table.print_ascii_table()
 
     print(C.ok("\n  Demo complete. Run 'python main.py' for the interactive menu.\n"))
@@ -254,6 +279,7 @@ MENU = [
     ("atom",     "Show full atom info",              action_atom),
     ("compare",  "Compare two elements side-by-side",action_compare),
     ("compound", "Build and analyze a compound",     action_compound),
+    ("lookup",   "Look up a known compound directly",action_lookup),
     ("library",  "Browse known compounds",           action_library),
     ("bond",     "Analyze bond between two elements",action_bond),
     ("decay",    "Simulate radioactive decay",       action_decay),
