@@ -1,5 +1,4 @@
 """
-
 Classes:
   Nucleus              -- Protons + neutrons; stability check
   ElectronConfiguration -- Full Aufbau fill with orbital-level detail
