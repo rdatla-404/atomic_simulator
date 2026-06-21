@@ -328,6 +328,62 @@ public class AtomicSimulator {
             ". Atoms share electrons to achieve stable octets (duet for H).","",false,true);
     }
 
+    static Double enDiff(Element a, Element b){
+        if(a.en<0 || b.en<0) return null;
+        return Math.abs(a.en-b.en);
+    }
+
+    static Compound predictMulti(java.util.List<int[]> tray, Map<String,Integer> keyMap){
+        // Heuristic for 3+ elements not found in the library. Real polyatomic
+        // chemistry (which atoms bond to which, true geometry) needs a table
+        // of known polyatomic ions this simulator doesn't model — so this
+        // classifies ionic-vs-covalent by the single largest EN gap between
+        // any two elements present, using the exact counts the user entered.
+        // The formula is taken as-given (not re-balanced) and no shape is
+        // guessed for 3+ elements; this is stated plainly in the description.
+        StringBuilder fb=new StringBuilder();
+        for(Map.Entry<String,Integer> e:keyMap.entrySet()) fb.append(e.getKey()).append(sub(e.getValue()));
+        String formula=fb.toString();
+
+        java.util.List<Element> elems=new ArrayList<>();
+        for(int[] item:tray){ Element el=ELEMENTS.get(item[0]); if(!elems.contains(el)) elems.add(el); }
+
+        double maxDiff=0; Element[] maxPair=null;
+        boolean anyMetal=false;
+        for(Element el:elems) if(METALS.contains(el.category)) anyMetal=true;
+        for(int i=0;i<elems.size();i++)
+            for(int j=i+1;j<elems.size();j++){
+                Double d=enDiff(elems.get(i),elems.get(j));
+                if(d!=null && d>maxDiff){ maxDiff=d; maxPair=new Element[]{elems.get(i),elems.get(j)}; }
+            }
+
+        String type, charDesc;
+        if(maxDiff>1.7 || anyMetal){
+            type="ionic";
+            charDesc = maxPair!=null
+                ? "Classified ionic — largest \u0394EN is "+String.format("%.2f",maxDiff)+" between "+maxPair[0].symbol+" and "+maxPair[1].symbol+"."
+                : "Classified ionic (metal present).";
+        } else {
+            type="covalent";
+            charDesc = maxPair!=null
+                ? "Classified covalent — largest \u0394EN is "+String.format("%.2f",maxDiff)+"."
+                : "Classified covalent.";
+        }
+
+        StringBuilder names=new StringBuilder();
+        for(int i=0;i<elems.size();i++){ if(i>0) names.append(", "); names.append(elems.get(i).name); }
+
+        String desc = "Predicted from "+names+" using the atom counts you entered. "+charDesc+
+            " NOTE: this simulator does not model polyatomic ions, so the formula is taken as-entered "+
+            "rather than re-balanced, and no VSEPR shape is inferred for 3+ element compounds — check "+
+            "the library first for known examples.";
+
+        Object[] ev=new Object[keyMap.size()*2];
+        int idx=0;
+        for(Map.Entry<String,Integer> e:keyMap.entrySet()){ ev[idx++]=e.getKey(); ev[idx++]=e.getValue(); }
+        return new Compound(formula,"Predicted multi-element compound",type,null,desc,"",false,true,ev);
+    }
+
     // ─────────────── BOHR MODEL PANEL ────────────────────
     static class BohrPanel extends JPanel {
         Element element;
@@ -755,7 +811,8 @@ public class AtomicSimulator {
             Map<String,Integer> keyMap=trayToMap(tray);
             Compound c=lookupCompound(keyMap);
             if(c==null && tray.size()==2) c=predictBond(tray);
-            else if(c==null) c=new Compound("?","Unknown","none",null,"Multi-element compound prediction supports 2-element combinations. For 3+ elements, check the library or try 2-element pairs first.","",false,false);
+            else if(c==null && tray.size()>=3) c=predictMulti(tray,keyMap);
+            else if(c==null) c=new Compound("?","Unknown","none",null,"Add at least one element to predict a compound.","",false,false);
             showResult(c);
         }
 
