@@ -128,6 +128,80 @@ class Compound:
     def atom_count(self) -> int:
         return sum(self.composition.values())
 
+    def _center_and_peripheral(self) -> Tuple[Optional[str], Optional[str], int]:
+        """
+        Heuristic for simple AXn molecules: the element with count==1 is
+        treated as the central atom, the other as the peripheral (repeated)
+        atom. Only meaningful for exactly two distinct elements.
+        Returns (center_symbol, peripheral_symbol, peripheral_count) or
+        (None, None, 0) if the heuristic doesn't apply.
+        """
+        if len(self.composition) != 2:
+            return None, None, 0
+        items = sorted(self.composition.items(), key=lambda kv: kv[1])
+        (sym_a, n_a), (sym_b, n_b) = items
+        if n_a == 1:
+            return sym_a, sym_b, n_b
+        return None, None, 0
+
+    def render_structure(self) -> str:
+        """
+        Render a simple ASCII diagram of the compound's geometry.
+        This is illustrative, not a true molecular model — it exists to give
+        a visual sense of shape (linear / bent / pyramidal / tetrahedral /
+        lattice), not a chemically rigorous structure.
+        """
+        shape  = (self.shape or "").lower()
+        center, periph, n = self._center_and_peripheral()
+
+        # Lattice / network solids (ionic crystals, network covalent solids)
+        if any(k in shape for k in ("crystal", "lattice", "network", "fcc", "hexagonal")):
+            syms = list(self.composition.keys())
+            a = syms[0]
+            b = syms[1] if len(syms) > 1 else syms[0]
+            rows = []
+            for r in range(3):
+                row = [a if (r + c) % 2 == 0 else b for c in range(4)]
+                rows.append("  " + "  ".join(row))
+            return "\n".join(rows) + "\n  (repeating lattice)"
+
+        if center and n == 2 and "linear" in shape:
+            return f"  {periph} — {center} — {periph}"
+
+        if center and n == 2 and "bent" in shape:
+            return (f"        {center}\n"
+                    f"       / \\\n"
+                    f"      {periph}   {periph}")
+
+        if center and n == 3 and "pyramidal" in shape:
+            return (f"          {center}\n"
+                    f"        / | \\\n"
+                    f"       {periph}  {periph}  {periph}")
+
+        if center and n == 3 and "planar" in shape:
+            return (f"      {periph}   {periph}\n"
+                    f"        \\ /\n"
+                    f"         {center}\n"
+                    f"         |\n"
+                    f"         {periph}")
+
+        if center and n == 4 and "tetrahedral" in shape:
+            return (f"            {periph}\n"
+                    f"            |\n"
+                    f"      {periph} — {center} — {periph}\n"
+                    f"            |\n"
+                    f"            {periph}")
+
+        if self.atom_count == 2:
+            a, b = list(self.composition.keys())
+            return f"  {a} — {b}"
+
+        # Generic fallback: simple bonded chain
+        return "  " + " — ".join(
+            sym if cnt == 1 else f"{sym}{to_sub(cnt)}"
+            for sym, cnt in self.composition.items()
+        )
+
     def __repr__(self) -> str:
         return f"Compound({self.formula}, {self.name}, type={self.bond_type})"
 
@@ -143,6 +217,8 @@ class Compound:
             f"  Bond type     : {self.bond_type}",
         ]
         if self.shape:        lines.append(f"  Shape (VSEPR) : {self.shape}")
+        if self.bond_type not in ("none", "inert"):
+            lines.append(f"\n  Structure:\n{self.render_structure()}")
         if self.description:  lines.append(f"\n  {self.description}")
         if self.uses:         lines.append(f"\n  Uses: {self.uses}")
         return "\n".join(lines)
@@ -296,17 +372,15 @@ class BondPredictor:
         if known:
             return known
 
-        # 2. Prediction (2-element only for now)
+        # 2. Prediction
         if len(elements) == 2:
             return self._predict_two(elements[0], elements[1])
+        if len(elements) >= 3:
+            return self._predict_multi(elements, comp)
 
         return Compound(
             formula="?", name="Unknown", composition=comp,
-            bond_type="none", description=(
-                "Multi-element compound prediction is supported for 2-element "
-                "combinations. For 3+ elements, extend BondPredictor or check "
-                "CompoundLibrary."
-            )
+            bond_type="none", description="Need at least one element."
         )
 
     def _predict_two(self, a: Element, b: Element) -> Compound:
@@ -394,6 +468,65 @@ class BondPredictor:
                 f"{a.name} needs {need_a} electron(s), {b.name} needs {need_b}. "
                 f"Atoms share electrons to achieve stable octets "
                 f"(H uses a duet). ΔEN = {round(diff, 2) if diff else '?'}."
+            ),
+            predicted=True
+        )
+
+    def _predict_multi(self, elements: List[Element], comp: Dict[str, int]) -> Compound:
+        """
+        Heuristic prediction for 3+ element combinations not found in the
+        library. Real polyatomic chemistry (e.g. which atoms bond to which,
+        true molecular geometry) requires a table of known polyatomic ions
+        that this simulator doesn't model — so this method makes one
+        simplifying assumption: classify the whole compound's character by
+        the single largest electronegativity gap between any two elements
+        present, using the exact atom counts the user supplied.
+
+        This gives a reasonable ionic-vs-covalent classification and a
+        correct molar mass, but the formula is taken as-given (not
+        re-balanced) and no shape/structure is inferred for 3+ elements —
+        this is flagged honestly in the description rather than guessed.
+        """
+        formula = "".join(
+            f"{sym}{to_sub(cnt)}" for sym, cnt in comp.items()
+        )
+
+        max_diff   = 0.0
+        max_pair   = None
+        any_metal  = any(el.category in METAL_CATEGORIES for el in elements)
+        for i in range(len(elements)):
+            for j in range(i + 1, len(elements)):
+                d = _en_diff(elements[i], elements[j])
+                if d is not None and d > max_diff:
+                    max_diff, max_pair = d, (elements[i], elements[j])
+
+        if max_diff > 1.7 or (any_metal and max_diff > 0):
+            bond_type = "ionic"
+            char_desc = (
+                f"Classified ionic — largest ΔEN is "
+                f"{round(max_diff, 2)} between {max_pair[0].symbol} and "
+                f"{max_pair[1].symbol}." if max_pair else "Classified ionic (metal present)."
+            )
+        else:
+            bond_type = "covalent"
+            char_desc = (
+                f"Classified covalent — largest ΔEN is "
+                f"{round(max_diff, 2)}." if max_pair else "Classified covalent."
+            )
+
+        names = ", ".join(el.name for el in elements)
+        return Compound(
+            formula=formula,
+            name="Predicted multi-element compound",
+            composition=comp,
+            bond_type=bond_type,
+            shape=None,
+            description=(
+                f"Predicted from {names} using the atom counts you entered. "
+                f"{char_desc} NOTE: this simulator does not model polyatomic "
+                f"ions, so the formula is taken as-entered rather than "
+                f"re-balanced, and no VSEPR shape is inferred for 3+ element "
+                f"compounds — check CompoundLibrary first for known examples."
             ),
             predicted=True
         )
