@@ -917,7 +917,13 @@ public class AtomicSimulator {
             tabs.addChangeListener(e -> {
                 if(tabs.getSelectedIndex() == 0) atomTab.bohr.start();
                 else atomTab.bohr.stop();
-            }); 
+            });
+            addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    atomTab.bohr.stop();
+                }
+            });
             add(tabs,BorderLayout.CENTER);
             pack();
             setLocationRelativeTo(null);
